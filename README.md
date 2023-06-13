@@ -13,11 +13,11 @@ libraryDependencies += "io.github.jchapuis" %% "fs2-kafka-mock" % "{latest versi
 ```
 
 ## Mock consumer
-The [mock consumer](src/main/scala/io/github/jchapuis/fs2/kafka/mock/MockKafkaConsumer.scala) allows covering code making use of fs2-kafka's `KafkaConsumer`. Injection of the mock is done via the implicit `MkConsumer` parameter that fs2-kafka had the foresight to allow. Methods on the mock allow for publishing and redacting messages, as if these were being published on the real kafka. 
+The [mock consumer](src/main/scala/io/github/jchapuis/fs2/kafka/mock/MockKafkaConsumer.scala) allows covering code making use of fs2-kafka's `KafkaConsumer`. Injection of the mock is done via the implicit `MkConsumer` parameter (that fs2-kafka had the foresight to allow). Methods on the mock allow for publishing and redacting messages, as if these were being published on the real kafka. 
 
-Internally, the mock consumer tracks published records in an array. Note, however, there are some limitations imposed by the native kafka mock: 
+Internally, the mock consumer tracks published records in an array. Note, however, that there are some limitations imposed by the native kafka mock: 
 - single partition support
-- consumers must be subscribed for publication to succeed
+- consumers must subscribe for publication to succeed
 
 ### Example
 Here's a short example taken from the project's munit test suite: we mock publication of a message, consume it using a fs2 kafka consumer configured with the mock and verify that the consumer was able to read the record.
@@ -28,7 +28,8 @@ test("mock kafka consumer can read a published message") {
     for {
       _ <- mockConsumer
         .publish("topic", "key", "value")
-        .start // this call semantically blocks until we can publish to the consumer, so launch it into a fiber
+        .start // this call semantically blocks until we can publish to the consumer
+               // hence the need to run it in a separate fiber
       record <- {
         implicit val mkConsumer: MkConsumer[IO] = mockConsumer.mkConsumer
         KafkaConsumer
@@ -51,7 +52,7 @@ test("mock kafka consumer can read a published message") {
 ```
 
 ## Mock producer
-The [mock producer](src/main/scala/io/github/jchapuis/fs2/kafka/mock/MockKafkaProducer.scala) allows covering code producing with fs2-kafka's `KafkaProducer`. Injection of the mock is done via the implicit `MkProducer` parameter, in a similar way as for the consumer. Methods on the mock allow for retrieving published records and iteratively checking for newer messages.
+The [mock producer](src/main/scala/io/github/jchapuis/fs2/kafka/mock/MockKafkaProducer.scala) allows covering code producing with fs2-kafka's `KafkaProducer`. Injection of the mock is done via the implicit `MkProducer` parameter, in a similar way as for the consumer. Various access methods on the mock allow for retrieving published records and iteratively checking for newer messages.
 
 ```scala
 test("mock kafka producer returns next message and allows for checking full history") {
