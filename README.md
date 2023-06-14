@@ -1,6 +1,8 @@
 # fs2-kafka-mock
-[![Release](https://github.com/jchapuis/fs2-kafka-mock/actions/workflows/release.yml/badge.svg?branch=master)](https://github.com/jchapuis/fs2-kafka-mock/actions/workflows/release.yml)
+[![Release](https://github.com/jchapuis/fs2-kafka-mock/actions/workflows/release.yml/badge.svg)](https://github.com/jchapuis/fs2-kafka-mock/actions/workflows/release.yml)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.github.jchapuis/fs2-kafka-mock_2.13/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.github.jchapuis/fs2-kafka-mock_2.13)
+[![codecov](https://codecov.io/gh/jchapuis/fs2-kafka-mock/branch/master/graph/badge.svg?token=BOAOIFC7BF)](https://codecov.io/gh/jchapuis/fs2-kafka-mock)
+<a href="https://typelevel.org/cats/"><img src="https://typelevel.org/cats/img/cats-badge.svg" height="40px" align="right" alt="Cats friendly" /></a>
 
 Mocks for fs2-kafka consumers and producers wrapping the native mocks built into the apache kafka clients library. This allows for testing applications without the need for a real kafka implementation such as testcontainers or embedded kafka. 
 
