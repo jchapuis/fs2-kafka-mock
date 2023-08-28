@@ -1,3 +1,5 @@
+import sbtversionpolicy.Compatibility.BinaryAndSourceCompatible
+
 val scala213 = "2.13.11"
 
 val scala3 = "3.3.0"
@@ -34,7 +36,7 @@ sonatypeProjectHosting := Some(xerial.sbt.Sonatype.GitHubHosting("jchapuis", "fs
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-versionPolicyIntention := Compatibility.None
+versionPolicyIntention := BinaryAndSourceCompatible
 
 versionScheme := Some("early-semver")
 
