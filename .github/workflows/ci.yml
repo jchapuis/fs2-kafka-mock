@@ -10,7 +10,7 @@ jobs:
           fetch-depth: 0
       - uses: coursier/setup-action@v1.3.3
         with:
-          jvm: adopt:11
+          jvm: temurin:17
           apps: sbt
       - run: sbt + compile coverage test coverageReport coverageAggregate versionPolicyCheck
       - uses: codecov/codecov-action@v3
