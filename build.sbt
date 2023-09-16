@@ -46,7 +46,7 @@ versionPolicyIgnoredInternalDependencyVersions := Some(
 
 libraryDependencies ++= Seq(
   "com.github.fd4s" %% "fs2-kafka" % "3.0.1",
-  "org.scalameta" %% "munit" % "1.0.0-M8" % Test,
+  "org.scalameta" %% "munit" % "1.0.0-M10" % Test,
   "org.typelevel" %% "munit-cats-effect" % "2.0.0-M3" % Test,
   "org.typelevel" %% "cats-effect-testkit" % "3.5.1" % Test
 )
