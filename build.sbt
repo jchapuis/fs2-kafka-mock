@@ -36,7 +36,7 @@ sonatypeProjectHosting := Some(xerial.sbt.Sonatype.GitHubHosting("jchapuis", "fs
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-versionPolicyIntention := BinaryAndSourceCompatible
+versionPolicyIntention := Compatibility.None
 
 versionScheme := Some("early-semver")
 
