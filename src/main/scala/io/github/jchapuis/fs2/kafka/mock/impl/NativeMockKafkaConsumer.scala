@@ -40,7 +40,7 @@ private[mock] class NativeMockKafkaConsumer(
   ): IO[Unit] = for {
     key <- keySerializer.serialize(topic, Headers.empty, key)
     value <- valueSerializer.serialize(topic, Headers.empty, value)
-    _ <- addRecord(topic, key, Some(value), timestamp)
+    _ <- addRecord(topic, key, Option(value), timestamp)
   } yield ()
 
   private def waitForConsumerToBeAssignedTo(topic: String): IO[Unit] =

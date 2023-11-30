@@ -90,6 +90,26 @@ class MockKafkaConsumerSuite extends CatsEffectSuite {
     }
   }
 
+  test("mock kafka consumer handles Option values correctly") {
+    MockKafkaConsumer(topicA).use { mockConsumer =>
+      for {
+        _ <- mockConsumer.publish[String, Option[String]](topicA, keyA, None).start
+        records <- {
+          implicit val mkConsumer: MkConsumer[IO] = mockConsumer.mkConsumer
+          KafkaConsumer
+            .stream(ConsumerSettings[IO, String, Option[String]].withGroupId("test"))
+            .subscribeTo(topicA)
+            .records
+            .map(_.record)
+            .take(1)
+            .compile
+            .toList
+        }
+        _ <- IO(records.headOption.flatMap(_.value)).assertEquals(None)
+      } yield ()
+    }
+  }
+
   // README.md example
   test("mock kafka consumer can read a published message") {
     MockKafkaConsumer("topic").use { mockConsumer =>
