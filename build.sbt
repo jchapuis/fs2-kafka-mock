@@ -48,5 +48,5 @@ libraryDependencies ++= Seq(
   "com.github.fd4s" %% "fs2-kafka" % "3.2.0",
   "org.scalameta" %% "munit" % "1.0.0-M10" % Test,
   "org.typelevel" %% "munit-cats-effect" % "2.0.0-M4" % Test,
-  "org.typelevel" %% "cats-effect-testkit" % "3.5.2" % Test
+  "org.typelevel" %% "cats-effect-testkit" % "3.5.3" % Test
 )
