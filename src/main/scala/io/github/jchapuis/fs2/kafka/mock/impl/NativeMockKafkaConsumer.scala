@@ -10,7 +10,7 @@ import io.github.jchapuis.fs2.kafka.mock.MockKafkaConsumer
 import org.apache.kafka.clients.consumer.*
 import org.apache.kafka.common.header.internals.RecordHeaders
 import org.apache.kafka.common.record.TimestampType
-import org.apache.kafka.common.{Metric, MetricName, PartitionInfo, TopicPartition}
+import org.apache.kafka.common.{Metric, MetricName, PartitionInfo, TopicPartition, Uuid}
 
 import java.time.{Duration, Instant}
 import java.util.{Optional, OptionalLong}
@@ -238,6 +238,8 @@ private[mock] class NativeMockKafkaConsumer(
       def close(timeout: Duration): Unit = withMutex(mockConsumer.close(timeout))
 
       def wakeup(): Unit = withMutex(mockConsumer.wakeup())
+
+      def clientInstanceId(timeout: Duration): Uuid = Uuid.randomUuid()
     }
 
     private def ensureConsumerAssignedTo(topics: List[String]): Unit =
