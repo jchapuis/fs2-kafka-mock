@@ -1,6 +1,6 @@
 import sbtversionpolicy.Compatibility.BinaryAndSourceCompatible
 
-val scala213 = "2.13.12"
+val scala213 = "2.13.14"
 
 val scala3 = "3.3.3"
 
