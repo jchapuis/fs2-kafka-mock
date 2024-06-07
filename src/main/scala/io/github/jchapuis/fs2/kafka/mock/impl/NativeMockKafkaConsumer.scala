@@ -10,7 +10,7 @@ import io.github.jchapuis.fs2.kafka.mock.MockKafkaConsumer
 import org.apache.kafka.clients.consumer.*
 import org.apache.kafka.common.header.internals.RecordHeaders
 import org.apache.kafka.common.record.TimestampType
-import org.apache.kafka.common.{Metric, MetricName, PartitionInfo, TopicPartition, Uuid}
+import org.apache.kafka.common.{Metric, MetricName, Node, PartitionInfo, TopicPartition, Uuid}
 
 import java.time.{Duration, Instant}
 import java.util.{Optional, OptionalLong}
@@ -170,10 +170,16 @@ private[mock] class NativeMockKafkaConsumer(
 
       def metrics(): util.Map[MetricName, _ <: Metric] = withMutex(mockConsumer.metrics())
 
-      def partitionsFor(topic: String): util.List[PartitionInfo] = withMutex(mockConsumer.partitionsFor(topic))
+      def partitionsFor(topic: String): util.List[PartitionInfo] =
+        withMutex {
+          if (mockConsumer.assignment().isEmpty) {
+            util.List.of(new PartitionInfo(topic, singlePartition, null, null, null))
+          } else {
+            mockConsumer.partitionsFor(topic)
+          }
+        }
 
-      def partitionsFor(topic: String, timeout: Duration): util.List[PartitionInfo] =
-        withMutex(mockConsumer.partitionsFor(topic, timeout))
+      def partitionsFor(topic: String, timeout: Duration): util.List[PartitionInfo] = partitionsFor(topic)
 
       def listTopics(): util.Map[String, util.List[PartitionInfo]] = withMutex(mockConsumer.listTopics())
 
