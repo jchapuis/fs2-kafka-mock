@@ -104,6 +104,27 @@ trait MockKafkaProducer {
       valueDeserializer: ValueDeserializer[IO, V]
   ): IO[V]
 
+  /** Returns the next message for the given topic and key wrapped in Some, or None if a redaction was received.
+    * Semantically blocks, with polling intervals and timeout specified with the patience implicit parameter
+    * @param topic
+    *   the topic to get the next message for
+    * @param key
+    *   the key to get the next message for
+    * @param patience
+    *   the patience to use for polling for the next message
+    * @param keyDeserializer
+    *   the key deserializer
+    * @param valueDeserializer
+    *   the value deserializer
+    * @throws `NoSuchElementException`
+    *   if no message is available before the timeout
+    */
+  def nextEventualValueOrRedactionFor[K: Eq, V](topic: String, key: K)(implicit
+      patience: Patience,
+      keyDeserializer: KeyDeserializer[IO, K],
+      valueDeserializer: ValueDeserializer[IO, V]
+  ): IO[Option[V]]
+
   /** MkProducer instance providing the mock producer. Including this instance in implicit scope where the kafka
     * producer is created will feed it with the mock producer instance instead of the real one
     */
