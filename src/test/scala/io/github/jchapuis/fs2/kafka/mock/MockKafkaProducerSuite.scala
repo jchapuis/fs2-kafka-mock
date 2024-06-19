@@ -46,6 +46,25 @@ class MockKafkaProducerSuite extends CatsEffectSuite {
     }
   }
 
+  test("mock kafka producer supports detecting redaction") {
+    createMockProducer.use { case (mock, producer) =>
+      createMockRedactor(mock.mkProducer).use { redactor =>
+        for {
+          _ <- producer.produce(ProducerRecords.one(record)).flatten
+          _ <- mock
+            .nextMessageFor[String, String](topic)
+            .map(maybeKeyValue => assertEquals(maybeKeyValue, Some((key, value))))
+          _ <- redactor.produceOne(topic, key, ())
+          _ <- mock.nextEventualValueOrRedactionFor[String, String](topic, key).map(assertEquals(_, None)) // redaction
+          _ <- producer.produce(ProducerRecords.one(ProducerRecord(topic, key, "foo"))).flatten
+          _ <- mock.nextEventualValueOrRedactionFor[String, String](topic, key).map(assertEquals(_, Some("foo")))
+          _ <- mock.nextValueFor[String, String](topic, key).map(assertEquals(_, None))
+
+        } yield ()
+      }
+    }
+  }
+
   test("mock kafka producer returns eventual message") {
     implicit val patience = MockKafkaProducer.Patience(timeout = 2.seconds, interval = 100.millis)
     val test = createMockProducer.use { case (mock, producer) =>
@@ -86,6 +105,9 @@ class MockKafkaProducerSuite extends CatsEffectSuite {
         producer.map((mock, _))
       }
   }
+
+  private def createMockRedactor(implicit mkProducer: MkProducer[IO]) =
+    KafkaProducer.resource(ProducerSettings[IO, String, Unit])
 
   // README.md example
   test("mock kafka producer returns next message and allows for checking full history") {

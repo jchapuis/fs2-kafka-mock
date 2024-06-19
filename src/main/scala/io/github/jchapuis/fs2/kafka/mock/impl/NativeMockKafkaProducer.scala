@@ -24,7 +24,7 @@ private[mock] class NativeMockKafkaProducer(
       keyDeserializer: KeyDeserializer[IO, K],
       valueDeserializer: ValueDeserializer[IO, V]
   ): IO[Option[(K, V)]] =
-    nextSelectedRecord(topic, record => IO(record.topic === topic))
+    nextSelectedRecord(topic, record => IO(record.topic === topic)).map(_.collect { case (k, Some(v)) => (k, v) })
 
   def nextValueFor[K: Eq, V](topic: String, key: K)(implicit
       keyDeserializer: KeyDeserializer[IO, K],
@@ -35,7 +35,7 @@ private[mock] class NativeMockKafkaProducer(
       record =>
         if (record.topic === topic) keyDeserializer.deserialize(topic, Headers.empty, record.key).map(_ === key)
         else IO.pure(false)
-    ).map(_.map { case (_, value) => value })
+    ).map(_.collect { case (_, Some(value)) => value })
 
   private def nextSelectedRecord[K, V](
       topic: String,
@@ -43,7 +43,7 @@ private[mock] class NativeMockKafkaProducer(
   )(implicit
       keyDeserializer: KeyDeserializer[IO, K],
       valueDeserializer: ValueDeserializer[IO, V]
-  ): IO[Option[(K, V)]] =
+  ): IO[Option[(K, Option[V])]] =
     mutex.lock.surround {
       for {
         currentOffset <- currentOffsets.get.map(_.getOrElse(topic, -1))
@@ -76,6 +76,18 @@ private[mock] class NativeMockKafkaProducer(
       else IO.pure(false)
   ).map { case (_, value) => value }
 
+  def nextEventualValueOrRedactionFor[K: Eq, V](topic: String, key: K)(implicit
+      patience: Patience,
+      keyDeserializer: KeyDeserializer[IO, K],
+      valueDeserializer: ValueDeserializer[IO, V]
+  ): IO[Option[V]] = nextEventualRecordOrRedactedFor[K, V](
+    topic,
+    record =>
+      if (record.topic === topic) keyDeserializer.deserialize(topic, Headers.empty, record.key).map(_ === key)
+      else IO.pure(false)
+  ).map { case (_, value) => value }
+
+  // note that this is not tail-recursive
   private def nextEventualRecordFor[K, V](
       topic: String,
       recordSelector: ProducerRecord[Array[Byte], Array[Byte]] => IO[Boolean]
@@ -84,19 +96,38 @@ private[mock] class NativeMockKafkaProducer(
       keyDeserializer: KeyDeserializer[IO, K],
       valueDeserializer: ValueDeserializer[IO, V]
   ): IO[(K, V)] = nextSelectedRecord[K, V](topic, recordSelector).flatMap {
-    case Some(record) => IO.pure(record)
-    case None if patience.timeout.toNanos > 0 =>
+    case Some((k, Some(v))) => IO.pure((k, v))
+    case _ if patience.timeout.toNanos > 0 =>
       IO.sleep(patience.interval) *> {
         val nextPatience: Patience = patience.copy(timeout = patience.timeout - patience.interval)
         nextEventualRecordFor[K, V](topic, recordSelector)(nextPatience, implicitly, implicitly)
       }
-    case None => IO.raiseError(new NoSuchElementException(s"no message found for topic $topic"))
+    case _ => IO.raiseError(new NoSuchElementException(s"no message found for topic $topic"))
   }
 
+  // note that this is not tail-recursive
+  private def nextEventualRecordOrRedactedFor[K, V](
+      topic: String,
+      recordSelector: ProducerRecord[Array[Byte], Array[Byte]] => IO[Boolean]
+  )(implicit
+      patience: Patience,
+      keyDeserializer: KeyDeserializer[IO, K],
+      valueDeserializer: ValueDeserializer[IO, V]
+  ): IO[(K, Option[V])] = nextSelectedRecord[K, V](topic, recordSelector).flatMap {
+    case Some(record) => IO.pure(record)
+    case None if patience.timeout.toNanos > 0 =>
+      IO.sleep(patience.interval) *> {
+        val nextPatience: Patience = patience.copy(timeout = patience.timeout - patience.interval)
+        nextEventualRecordOrRedactedFor[K, V](topic, recordSelector)(nextPatience, implicitly, implicitly)
+      }
+    case None => IO.raiseError(new NoSuchElementException(s"no message found for topic $topic"))
+  }
   def historyFor[K, V](
       topic: String
   )(implicit keyDeserializer: KeyDeserializer[IO, K], valueDeserializer: ValueDeserializer[IO, V]): IO[List[(K, V)]] =
-    selectedHistory(topic, record => IO(record.topic === topic)).map(_.map { case (_, key, value) => (key, value) })
+    selectedHistory(topic, record => IO(record.topic === topic)).map(_.collect { case (_, key, Some(value)) =>
+      (key, value)
+    })
 
   def historyFor[K: Eq, V](topic: String, key: K)(implicit
       keyDeserializer: KeyDeserializer[IO, K],
@@ -106,7 +137,7 @@ private[mock] class NativeMockKafkaProducer(
     record =>
       if (record.topic === topic) keyDeserializer.deserialize(topic, Headers.empty, record.key).map(_ === key)
       else IO.pure(false)
-  ).map(_.map { case (_, _, value) => value })
+  ).map(_.collect { case (_, _, Some(value)) => value })
 
   private def selectedHistory[K, V](
       topic: String,
@@ -114,7 +145,7 @@ private[mock] class NativeMockKafkaProducer(
   )(implicit
       keyDeserializer: KeyDeserializer[IO, K],
       valueDeserializer: ValueDeserializer[IO, V]
-  ): IO[List[(Int, K, V)]] = mockProducer.history.asScala.zipWithIndex.toList
+  ): IO[List[(Int, K, Option[V])]] = mockProducer.history.asScala.zipWithIndex.toList
     .traverse { case (record, index) =>
       for {
         isSelected <- recordSelector(record)
@@ -122,8 +153,10 @@ private[mock] class NativeMockKafkaProducer(
           if (isSelected) keyDeserializer.deserialize(topic, Headers.empty, record.key).map(Option(_))
           else IO(None)
         value <-
-          if (isSelected) valueDeserializer.deserialize(topic, Headers.empty, record.value).map(Option(_))
-          else IO(None)
+          (if (isSelected) {
+             if (record.value eq null) IO(Some(None))
+             else valueDeserializer.deserialize(topic, Headers.empty, record.value).map(v => Some(Some(v)))
+           } else IO(None)): IO[Option[Option[V]]]
       } yield key.zip(value).map { case (k, v) => (index, k, v) }
     }
     .map(_.flatten)
