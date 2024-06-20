@@ -4,8 +4,7 @@ import cats.Eq
 import cats.effect.IO
 import cats.effect.kernel.Ref
 import cats.effect.std.Mutex
-import cats.syntax.eq.*
-import cats.syntax.traverse.*
+import cats.syntax.all.*
 import fs2.kafka.*
 import fs2.kafka.producer.MkProducer
 import io.github.jchapuis.fs2.kafka.mock.MockKafkaProducer
@@ -146,20 +145,17 @@ private[mock] class NativeMockKafkaProducer(
       keyDeserializer: KeyDeserializer[IO, K],
       valueDeserializer: ValueDeserializer[IO, V]
   ): IO[List[(Int, K, Option[V])]] = mockProducer.history.asScala.zipWithIndex.toList
-    .traverse { case (record, index) =>
-      for {
-        isSelected <- recordSelector(record)
-        key <-
-          if (isSelected) keyDeserializer.deserialize(topic, Headers.empty, record.key).map(Option(_))
-          else IO(None)
-        value <-
-          (if (isSelected) {
-             if (record.value eq null) IO(Some(None))
-             else valueDeserializer.deserialize(topic, Headers.empty, record.value).map(v => Some(Some(v)))
-           } else IO(None)): IO[Option[Option[V]]]
-      } yield key.zip(value).map { case (k, v) => (index, k, v) }
+    .flatTraverse { case (record, index) =>
+      recordSelector(record)
+        .ifM(
+          (
+            IO.pure(index),
+            keyDeserializer.deserialize(topic, Headers.empty, record.key),
+            Option(record.value).traverse(valueDeserializer.deserialize(topic, Headers.empty, _))
+          ).parTupled.map(List(_)), // outer flatTraverse will flatten the List(_)
+          IO(Nil) // drop this record
+        )
     }
-    .map(_.flatten)
 
   implicit lazy val mkProducer: MkProducer[IO] = new MkProducer[IO] {
     def apply[G[_]](settings: ProducerSettings[G, ?, ?]): IO[KafkaByteProducer] = IO(mockProducer)
