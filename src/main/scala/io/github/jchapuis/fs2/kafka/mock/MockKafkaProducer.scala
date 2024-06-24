@@ -22,12 +22,18 @@ import scala.jdk.CollectionConverters.*
 trait MockKafkaProducer {
 
   /** Returns the list of published messages for the given topic.
-    * @param topic the topic to get the history for
-    * @param keyDeserializer the key deserializer
-    * @param valueDeserializer the value deserializer
-    * @tparam K the key type
-    * @tparam V the value type
-    * @return the list of published messages thus far
+    * @param topic
+    *   the topic to get the history for
+    * @param keyDeserializer
+    *   the key deserializer
+    * @param valueDeserializer
+    *   the value deserializer
+    * @tparam K
+    *   the key type
+    * @tparam V
+    *   the value type
+    * @return
+    *   the list of published messages thus far
     */
   def historyFor[K, V](topic: String)(implicit
       keyDeserializer: KeyDeserializer[IO, K],
@@ -35,13 +41,20 @@ trait MockKafkaProducer {
   ): IO[List[(K, V)]]
 
   /** Returns the list of published messages for the given topic and key.
-    * @param topic the topic to get the history for
-    * @param key the key to get the history for
-    * @param keyDeserializer the key deserializer
-    * @param valueDeserializer the value deserializer
-    * @tparam K the key type
-    * @tparam V the value type
-    * @return the list of published messages thus far
+    * @param topic
+    *   the topic to get the history for
+    * @param key
+    *   the key to get the history for
+    * @param keyDeserializer
+    *   the key deserializer
+    * @param valueDeserializer
+    *   the value deserializer
+    * @tparam K
+    *   the key type
+    * @tparam V
+    *   the value type
+    * @return
+    *   the list of published messages thus far
     */
   def historyFor[K: Eq, V](topic: String, key: K)(implicit
       keyDeserializer: KeyDeserializer[IO, K],
@@ -49,25 +62,36 @@ trait MockKafkaProducer {
   ): IO[List[V]]
 
   /** Returns the next message for the given topic, if any. Increments the internal offset for the topic.
-    * @param topic the topic to get the next message for
-    * @param keyDeserializer the key deserializer
-    * @param valueDeserializer the value deserializer
-    * @tparam K the key type
-    * @tparam V the value type
-    * @return the next message for the given topic, if any
+    * @param topic
+    *   the topic to get the next message for
+    * @param keyDeserializer
+    *   the key deserializer
+    * @param valueDeserializer
+    *   the value deserializer
+    * @tparam K
+    *   the key type
+    * @tparam V
+    *   the value type
+    * @return
+    *   the next message for the given topic, if any
     */
   def nextMessageFor[K, V](topic: String)(implicit
       keyDeserializer: KeyDeserializer[IO, K],
       valueDeserializer: ValueDeserializer[IO, V]
   ): IO[Option[(K, V)]]
 
-  /** Returns the next message for the given topic. Semantically blocks, with polling intervals and timeout
-    * specified with the patience implicit parameter
-    *  @param topic the topic to get the next message for
-    *  @param patience the patience to use for polling for the next message
-    *  @param keyDeserializer the key deserializer
-    *  @param valueDeserializer the value deserializer
-    *  @throws `NoSuchElementException` if no message is available before the timeout
+  /** Returns the next message for the given topic. Semantically blocks, with polling intervals and timeout specified
+    * with the patience implicit parameter
+    * @param topic
+    *   the topic to get the next message for
+    * @param patience
+    *   the patience to use for polling for the next message
+    * @param keyDeserializer
+    *   the key deserializer
+    * @param valueDeserializer
+    *   the value deserializer
+    * @throws `NoSuchElementException`
+    *   if no message is available before the timeout
     */
   def nextEventualMessageFor[K, V](topic: String)(implicit
       patience: Patience,
@@ -76,13 +100,20 @@ trait MockKafkaProducer {
   ): IO[(K, V)]
 
   /** Returns the next message for the given topic and key, if any. Increments the internal offset for the topic.
-    * @param topic the topic to get the next message for
-    * @param key the key to get the next message for
-    * @param keyDeserializer the key deserializer
-    * @param valueDeserializer the value deserializer
-    * @tparam K the key type
-    * @tparam V the value type
-    * @return the next message for the given topic and key, if any
+    * @param topic
+    *   the topic to get the next message for
+    * @param key
+    *   the key to get the next message for
+    * @param keyDeserializer
+    *   the key deserializer
+    * @param valueDeserializer
+    *   the value deserializer
+    * @tparam K
+    *   the key type
+    * @tparam V
+    *   the value type
+    * @return
+    *   the next message for the given topic and key, if any
     */
   def nextValueFor[K: Eq, V](topic: String, key: K)(implicit
       keyDeserializer: KeyDeserializer[IO, K],
@@ -91,12 +122,18 @@ trait MockKafkaProducer {
 
   /** Returns the next message for the given topic and key. Semantically blocks, with polling intervals and timeout
     * specified with the patience implicit parameter
-    *  @param topic the topic to get the next message for
-    *  @param key the key to get the next message for
-    *  @param patience the patience to use for polling for the next message
-    *  @param keyDeserializer the key deserializer
-    *  @param valueDeserializer the value deserializer
-    *  @throws `NoSuchElementException` if no message is available before the timeout
+    * @param topic
+    *   the topic to get the next message for
+    * @param key
+    *   the key to get the next message for
+    * @param patience
+    *   the patience to use for polling for the next message
+    * @param keyDeserializer
+    *   the key deserializer
+    * @param valueDeserializer
+    *   the value deserializer
+    * @throws `NoSuchElementException`
+    *   if no message is available before the timeout
     */
   def nextEventualValueFor[K: Eq, V](topic: String, key: K)(implicit
       patience: Patience,
@@ -138,7 +175,8 @@ object MockKafkaProducer {
   }
 
   /** Creates a mock kafka producer, backed by the mock producer built into the kafka client library.
-    * @return a resource containing the mock kafka producer
+    * @return
+    *   a resource containing the mock kafka producer
     */
   def apply(): Resource[IO, MockKafkaProducer] =
     Resource

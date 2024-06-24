@@ -21,15 +21,24 @@ trait MockKafkaConsumer {
     *
     * Semantically blocking until a consumer subscribes to the topic: internally, it's polling for assignments, as the
     * native kafka mock doesn't support upfront publication but requires an assignment to be made before publishing.
-    * @param topic the topic to publish to
-    * @param key the key to publish
-    * @param value the value to publish
-    * @param timestamp optional timestamp of the message
-    * @param keySerializer the key serializer
-    * @param valueSerializer the value serializer
-    * @tparam K the key type
-    * @tparam V the value type
-    * @return once published, a unit
+    * @param topic
+    *   the topic to publish to
+    * @param key
+    *   the key to publish
+    * @param value
+    *   the value to publish
+    * @param timestamp
+    *   optional timestamp of the message
+    * @param keySerializer
+    *   the key serializer
+    * @param valueSerializer
+    *   the value serializer
+    * @tparam K
+    *   the key type
+    * @tparam V
+    *   the value type
+    * @return
+    *   once published, a unit
     */
   def publish[K, V](topic: String, key: K, value: V, timestamp: Option[Instant] = None)(implicit
       keySerializer: KeySerializer[IO, K],
@@ -38,27 +47,36 @@ trait MockKafkaConsumer {
 
   /** Redact a message from the topic, aka. publish a tombstone.
     *
-    * @param topic the topic to redact from
-    * @param key the key to redact
-    * @param keySerializer the key serializer
-    * @tparam K the key type
-    * @return once redacted, a unit
+    * @param topic
+    *   the topic to redact from
+    * @param key
+    *   the key to redact
+    * @param keySerializer
+    *   the key serializer
+    * @tparam K
+    *   the key type
+    * @return
+    *   once redacted, a unit
     */
   def redact[K](topic: String, key: K)(implicit keySerializer: KeySerializer[IO, K]): IO[Unit]
 
-  /** MkConsumer instance providing the mock consumer. Including this instance in implicit scope where the kafka consumer
-    * resource is created will feed it with the mock consumer instance instead of the default, real one.
+  /** MkConsumer instance providing the mock consumer. Including this instance in implicit scope where the kafka
+    * consumer resource is created will feed it with the mock consumer instance instead of the default, real one.
     */
   implicit def mkConsumer: MkConsumer[IO]
 }
 
 object MockKafkaConsumer {
 
-  /** Create a mock kafka consumer for the given topics. Backed by the mock consumer built into the kafka client library.
+  /** Create a mock kafka consumer for the given topics. Backed by the mock consumer built into the kafka client
+    * library.
     *
-    * @param topics the topics to create the consumer for
-    * @param IORuntime the implicit IORuntime
-    * @return a resource containing the mock kafka consumer
+    * @param topics
+    *   the topics to create the consumer for
+    * @param IORuntime
+    *   the implicit IORuntime
+    * @return
+    *   a resource containing the mock kafka consumer
     */
   def apply(topics: String*)(implicit IORuntime: IORuntime): Resource[IO, MockKafkaConsumer] =
     Resource.eval(Ref.of[IO, Map[String, Long]](topics.map(_ -> 0L).toMap)).flatMap { currentOffsets =>
